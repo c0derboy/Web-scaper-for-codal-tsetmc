@@ -30,6 +30,12 @@ def renderlinks(list):
 	for i in range(len(list)):
 		list[i] = list[i].replace('\n', '')
 
+#calculate bps and cps
+def calculate_bps_cps(shares, equity, cash):
+	cps = cash / shares
+	bps = equity / shares
+	return {'bps': bps, 'cps': cps}
+
 #get data from tsetmc
 def get_price(symbol):
 	main = 'http://www.tsetmc.com/Loader.aspx?ParTree=15'
@@ -42,7 +48,7 @@ def get_price(symbol):
 
 	search_results = driver.find_element_by_id('SearchResult')
 
-	while loading:
+	while True:
 	    try:
 	        stock = search_results.find_element_by_css_selector('a').get_attribute('href')
 	        break
@@ -50,17 +56,19 @@ def get_price(symbol):
 	        continue
 	            
 	driver.get(stock)
-
+	#to fix
 	while True:
 	    price = driver.find_element_by_id('d02').text.split('  ')
 	    if price == ['']:
 	        continue
 	    else:
 	        break
-
-	price_changes = price[2][1:-1]
+	print(price)
+	try:
+		price_changes = price[2][1:-1]
+	except:
+		price_changes = 'None'
 	price = int(price[0].replace(',', ''))
-	print(f"{price:,.0f}, {price_changes}")
 
 	yearly_lowhigh = driver.find_elements_by_css_selector('.box6:nth-child(2)>table>tbody>tr:nth-child(4) td')
 	yearly_lowhigh = yearly_lowhigh[1:]
@@ -68,7 +76,7 @@ def get_price(symbol):
 	yearly_lowhigh = [numfix(i) for i in yearly_lowhigh]
 	yearly_high = yearly_lowhigh[0]
 	yearly_low = yearly_lowhigh[1]
-	print(f"Low: {yearly_low:,.0f}, High: {yearly_high:,.2f}")
+	return {'price': price, 'price changes':price_changes, 'yearly high':yearly_high, 'yearly low':yearly_low}
 
 #get data from codal
 def get_data(link):
@@ -79,24 +87,20 @@ def get_data(link):
 	#get symbol
 	symbol = driver.find_element_by_css_selector('#ctl00_txbSymbol').text
 	fixedsymbol = namefix(symbol)
-	print(fixedsymbol)
 
 	#get name
 	name = driver.find_element_by_css_selector('#ctl00_txbCompanyName').text
 	name = namefix(name)
-	print(name)
 	#Shares
 	shares = driver.find_element_by_css_selector('#ctl00_lblListedCapital').text
 	shares = numfix(shares)
 	shares *= 1000
-	print(shares)
 
 
 	#Equity
 	equity = driver.find_elements_by_css_selector('table>tbody>tr:nth-child(32) td')[1].text
 	equity = numfix(equity)
 	equity *= 1000000
-	print(equity)
 
 
 	#ChashFlow
@@ -107,11 +111,8 @@ def get_data(link):
 	data = [numfix(i) for i in data]
 	cash = data[2] - data[1] + data[0]
 	cash *= 1000000
-	print(cash)
-	cps = cash / shares
-	bps = equity / shares
-	print(f'BPS: {bps:.0f} | CPS: {cps:.0f}')
-	get_price(symbol)
+	return {'stock': {'symbol': fixedsymbol, 'name':name, 'shares':shares,'equity': equity,'cash': cash}, 'prices': get_price(symbol), 'ratios': calculate_bps_cps(shares, equity, cash)}
+
 
 #mass input => output
 
@@ -121,14 +122,23 @@ def get_data(link):
 #Main code
 driver = webdriver.Chrome(executable_path = r'C:\Users\Sina\Desktop\chromedriver.exe')
 input_file = open('input.txt')
-links = input_file.readlines()
-renderlinks(links)
-for e in links:
-	get_data(e)
-
-
 output_file = open('output.txt', 'a+')
 
+links = input_file.readlines()
+renderlinks(links)
+
+for e in links:
+	data = get_data(e)
+	sd = data['stock']
+	pd = data['prices']
+	rd = data['ratios']
+	print(data)
+	output = f"{sd['symbol']} | BPS: {rd['bps']} | CPS: {rd['cps']} | Price: {pd['price']} {pd['price changes']} | 52W-Low: {pd['yearly low']} | 52W-High: {pd['yearly high']}\n"
+	output_file.write(output)
+
+
+input_file.close()
+output_file.close()
 driver.close()
 #get_data(link)
 #add readName
