@@ -1,7 +1,8 @@
 ﻿import selenium
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
 from unidecode import unidecode
-import time
 
 #fuctions
 #fix the numbers and get integers
@@ -43,9 +44,8 @@ def get_price(symbol):
 
 
 	driver.execute_script("javascript:ShowSearchWindow();")
-	driver.execute_script("SearchKey.value = arguments[0];", (symbol))
+	driver.execute_script("SearchKey.value = arguments[0];", (symbol + " "))
 	driver.execute_script('GetSearchResult();')
-
 	search_results = driver.find_element_by_id('SearchResult')
 
 	while True:
@@ -56,7 +56,6 @@ def get_price(symbol):
 	        continue
 	            
 	driver.get(stock)
-	#to fix
 	while True:
 	    price = driver.find_element_by_id('d02').text.split('  ')
 	    if price == ['']:
@@ -85,6 +84,7 @@ def get_data(link):
 	driver.get(mali)
 
 	#get symbol
+
 	symbol = driver.find_element_by_css_selector('#ctl00_txbSymbol').text
 	fixedsymbol = namefix(symbol)
 
@@ -114,15 +114,27 @@ def get_data(link):
 	return {'stock': {'symbol': fixedsymbol, 'name':name, 'shares':shares,'equity': equity,'cash': cash}, 'prices': get_price(symbol), 'ratios': calculate_bps_cps(shares, equity, cash)}
 
 
-#mass input => output
 
 #link = 'https://codal.ir/Reports/Decision.aspx?LetterSerial=1gr1Ya1g%2BpC0fcDqU5BnHw%3D%3D&rt=0&let=6&ct=0&ft=-1'
 #link = str(input('link='))
 
 #Main code
-driver = webdriver.Chrome(executable_path = r'C:\Users\Sina\Desktop\chromedriver.exe')
+#CHROME_PATH = r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+CHROMEDRIVER_PATH = r'C:\Users\Sina\Desktop\chromedriver.exe'
+
+"""
+WINDOW_SIZE = "1920,1080"
+
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--window-size=%s" % WINDOW_SIZE)
+chrome_options.binary_location = CHROME_PATH
+
+"""
+driver = webdriver.Chrome(executable_path = CHROMEDRIVER_PATH)
+
 input_file = open('input.txt', 'r')
-output_file = open('output.txt', 'a')
+output_file = open('output.txt', 'w')
 
 links = input_file.readlines()
 renderlinks(links)
@@ -132,12 +144,21 @@ for e in links:
 	sd = data['stock']
 	pd = data['prices']
 	rd = data['ratios']
-	output = f"{sd['symbol']} | BPS: {rd['bps']} | CPS: {rd['cps']} | Price: {pd['price']} {pd['price changes']} | 52W-Low: {pd['yearly low']} | 52W-High: {pd['yearly high']}\n"
+	output = f"{sd['symbol']} | BPS: {rd['bps']:,.2f} | CPS: {rd['cps']:,.2f} | Price: {pd['price']} {pd['price changes']} | 52W-Low: {pd['yearly low']} | 52W-High: {pd['yearly high']}\n"
 	output_file.write(output)
+	percent = (links.index(e) + 1) / len(links) * 100
+	print(f"{percent:.2f}% Done.")
 
 
 input_file.close()
 output_file.close()
 driver.close()
-#get_data(link)
-#add readName
+
+
+"""
+1. fix result picking algorithm
+2. more efficient symbol reading alg
+read this id first: #ctl00_lblDisplaySymbol
+and replace (, ) with nothing
+3. 
+"""
