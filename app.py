@@ -63,7 +63,7 @@ def get_price(symbol):
 	        continue
 	    else:
 	        break
-	print(price)
+	#print(price)
 	try:
 		price_changes = price[2][1:-1]
 	except:
@@ -121,8 +121,8 @@ def get_data(link):
 
 #Main code
 driver = webdriver.Chrome(executable_path = r'C:\Users\Sina\Desktop\chromedriver.exe')
-input_file = open('input.txt')
-output_file = open('output.txt', 'a+')
+input_file = open('input.txt', 'r')
+output_file = open('output.txt', 'a')
 
 links = input_file.readlines()
 renderlinks(links)
@@ -132,7 +132,6 @@ for e in links:
 	sd = data['stock']
 	pd = data['prices']
 	rd = data['ratios']
-	print(data)
 	output = f"{sd['symbol']} | BPS: {rd['bps']} | CPS: {rd['cps']} | Price: {pd['price']} {pd['price changes']} | 52W-Low: {pd['yearly low']} | 52W-High: {pd['yearly high']}\n"
 	output_file.write(output)
 
@@ -142,4 +141,3 @@ output_file.close()
 driver.close()
 #get_data(link)
 #add readName
-
